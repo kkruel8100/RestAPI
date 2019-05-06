@@ -1,0 +1,41 @@
+body {
+  background-color: #f1f1f1;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.6;
+  font-size: 1em;
+}
+
+button {
+  background-color: #007bff;
+  border: 1px solid #007bff;
+  text-align: center;
+  color: #fff;
+  font-weight: 400;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  border-radius: 0.25rem;
+  margin: 1em;
+}
+
+h3 {
+  text-align: center;
+}
+
+input {
+  line-height: 1.5;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
+}
+
+table,
+th,
+tr,
+td {
+  border: 1px solid #dee2e6;
+  border-collapse: collapse;
+}
+
+td {
+  padding: 0.75rem;
+}

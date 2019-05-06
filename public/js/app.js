@@ -1,7 +1,6 @@
 window.onload = () => {
-
   document.getElementById('search-form').reset();
-}
+};
 
 const startDate = document.getElementById('start-date');
 const endDate = document.getElementById('end-date');
@@ -10,7 +9,6 @@ let result = [];
 
 // Form Validation - Disable Search Button
 document.addEventListener('click', e => {
-
   if (
     new Date(startDate.value) < new Date(startDate.min) ||
     new Date(startDate.value) > new Date(startDate.max) ||
@@ -32,13 +30,16 @@ document.querySelector('#search-button').addEventListener('click', e => {
   searchButton.remove();
   document.getElementById('tweet-total').innerHTML = 'Searching ...';
 
-  getTweets(startDateValue, endDateValue);
+  getTweets(startDateValue, endDateValue).then(data =>
+    setTimeout(() => {
+      createTable(data);
+    }, 10000)
+  );
 });
 
-
-// GET Tweet Request
-function getTweets(startDate, endDate) {
-  axios
+// // GET Tweet Request
+async function getTweets(startDate, endDate) {
+  return await axios
     .get('http://localhost:3000/api/tweets', {
       params: {
         startDate,
@@ -46,7 +47,20 @@ function getTweets(startDate, endDate) {
       }
     })
     .then(res => {
-      createTable(res, startDate, endDate);
+      if (res.data.length === 100) {
+        reduceResult(startDate, endDate).then(newDates => {
+          // Date[0] = new endDate
+          // Date[1] = new startDate
+          getTweets(startDate, newDates[0]);
+          getTweets(newDates[1], endDate);
+        });
+      } else {
+        result = getResults(res);
+        let html = 'Total tweets: ' + result.length;
+        document.getElementById('tweet-total').innerHTML = html;
+        console.log(result);
+      }
+      return result;
     })
     .catch(err => {
       console.log('err: ' + err);
@@ -54,7 +68,7 @@ function getTweets(startDate, endDate) {
 }
 
 // Modify API date parameters to reduce data results to less than 100
-async function reduceCallback(startDate, endDate) {
+async function reduceResult(startDate, endDate) {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
@@ -67,58 +81,40 @@ async function reduceCallback(startDate, endDate) {
   await start.setUTCDate(start.getUTCDate() + midpointDays);
   await end.setUTCDate(end.getUTCDate() - midpointDays);
 
-  await getTweets(startDate, start.toUTCString());
-  await getTweets(end.toUTCString(), endDate);
+  return [start.toUTCString(), end.toUTCString()];
 }
 
-
-function createTable(response, startDate, endDate) {
+function getResults(response) {
   const data = response.data;
-  if (data.length === 100) {
-    reduceCallback(startDate, endDate);
-  } else if (data.length > 1) {
+  if (data.length > 0) {
     for (let item of data) {
       let index = result.findIndex(tweet => tweet.id === item.id);
       if (index === -1) {
         result.push(item);
       }
     }
-    let html = 'Total tweets: ' + result.length;
-
-    document.getElementById('tweet-total').innerHTML = html;
-  } else {
-    document.getElementById('tweet-total').innerHTML = 'No data found';
   }
+
+  return result;
 }
 
+function createTable(response) {
+  if (response.length > 0) {
+    let html = '<table>';
+    html += '<tr>';
+    html += '<th align="left">ID</th>';
+    html += '<th align="left">Date</th>';
+    html += '<th align="left">Tweet</th>';
+    html += '</tr>';
 
-
-// Table Creation
-// request.addEventListener('readystatechange', e => {
-//   console.log(e);
-//   if (e.target.readyState === 4 && e.target.status === 200) {
-//     const data = JSON.parse(e.target.responseText);
-//     console.log(data);
-//     if (data.length > 1) {
-//       let html = '<p>Total tweets: ' + data.length;
-//       html += '<table>';
-//       html += '<tr>';
-//       html += '<th align="left">ID</th>';
-//       html += '<th align="left">Date</th>';
-//       html += '<th align="left">Tweet</th>';
-//       html += '</tr>';
-
-//       for (let item of data) {
-//         html += '<tr>';
-//         html += '<td>' + item.name + '</td>';
-//         html += '<td>' + item.capital + '</td>';
-//         html += '<td>' + item.region + '</td>';
-//         html += '</tr>';
-//       }
-//       html += '</table></p>';
-//       document.getElementById('tweet-table').innerHTML = html;
-//     }
-//   } else if (e.target.readyState === 4) {
-//     console.log('API data failure has occurred');
-//   }
-// });
+    for (let item of response) {
+      html += '<tr>';
+      html += '<td>' + item.id + '</td>';
+      html += '<td>' + item.stamp + '</td>';
+      html += '<td>' + item.text.substring(0, 100) + '</td>';
+      html += '</tr>';
+    }
+    html += '</table></p';
+    document.getElementById('tweet-table').innerHTML = html;
+  }
+}

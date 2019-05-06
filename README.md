@@ -1,15 +1,15 @@
 # RestAPI
 
-## Steps
+## Steps:
 1.  Clone repo from GitHub
 2.  Terminal: \RestAPI> npm install or yarn install
 3.  Terminal: \RestAPI> node server.js
 4.  Firefox: http://localhost:3000/
 5.  Firefox: click "Search" button  
-*   Default dates: Start date = 01/01/2016 and End date = 12/31/2016
+*   Default dates: Start date = 01/01/2016 and End date = 12/31/2017.
 *   Dates may be overwritten with dates between and including the default dates. Form validation will verify input.
 
-## Objective:
+## Objectives:
 
 1.  Using Javascript, create a GET request to a poorly designed 3rd party API.  
 * Known issues: No more than 100 results are returned at one time and no indication of total results available.  
