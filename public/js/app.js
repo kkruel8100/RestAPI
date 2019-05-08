@@ -5,7 +5,6 @@ window.onload = () => {
 const startDate = document.getElementById('start-date');
 const endDate = document.getElementById('end-date');
 const searchButton = document.getElementById('search-button');
-let result = [];
 
 // Form Validation - Disable Search Button
 document.addEventListener('click', e => {
@@ -30,42 +29,61 @@ document.querySelector('#search-button').addEventListener('click', e => {
   searchButton.remove();
   document.getElementById('tweet-total').innerHTML = 'Searching ...';
 
-  getTweets(startDateValue, endDateValue).then(data =>
-    setTimeout(() => {
-      createTable(data);
-    }, 10000)
-  );
+  new Promise((resolve, reject) => {
+    allTweets(startDateValue, endDateValue, resolve, reject);
+  }).then(response => {
+    createTable(response);
+  });
 });
 
-// // GET Tweet Request
-async function getTweets(startDate, endDate) {
-  return await axios
-    .get('http://localhost:3000/api/tweets', {
-      params: {
-        startDate,
-        endDate
-      }
-    })
-    .then(res => {
-      if (res.data.length === 100) {
-        reduceResult(startDate, endDate).then(newDates => {
-          // Date[0] = new endDate
-          // Date[1] = new startDate
-          getTweets(startDate, newDates[0]);
-          getTweets(newDates[1], endDate);
-        });
-      } else {
-        result = getResults(res);
-        let html = 'Total tweets: ' + result.length;
-        document.getElementById('tweet-total').innerHTML = html;
-        console.log(result);
-      }
-      return result;
-    })
-    .catch(err => {
-      console.log('err: ' + err);
-    });
-}
+// GET Tweet Request
+const allTweets = (startDate, endDate, resolve, reject) => {
+  let counter = 0;
+  let result = [];
+
+  const getTweets = (startDate, endDate, resolve, reject) => {
+    counter++;
+    axios
+      .get('http://localhost:3000/api/tweets', {
+        params: {
+          startDate,
+          endDate
+        }
+      })
+      .then(response => {
+        if (response.data.length === 100) {
+          counter--;
+          reduceResult(startDate, endDate).then(newDates => {
+            getTweets(startDate, newDates[0], resolve, reject);
+            getTweets(newDates[1], endDate, resolve, reject);
+          });
+        } else {
+          const data = response.data;
+          counter--;
+
+          if (data.length > 0) {
+            for (let item of data) {
+              let index = result.findIndex(tweet => tweet.id === item.id);
+              if (index === -1) {
+                result.push(item);
+              }
+            }
+          }
+
+          if (counter === 0) {
+            resolve(result);
+          }
+
+          let html = 'Total tweets: ' + result.length;
+          document.getElementById('tweet-total').innerHTML = html;
+        }
+      })
+      .catch(error => {
+        return 'Something went wrong. Please refresh and try again.';
+      });
+  };
+  getTweets(startDate, endDate, resolve, reject);
+};
 
 // Modify API date parameters to reduce data results to less than 100
 async function reduceResult(startDate, endDate) {
@@ -84,22 +102,8 @@ async function reduceResult(startDate, endDate) {
   return [start.toUTCString(), end.toUTCString()];
 }
 
-function getResults(response) {
-  const data = response.data;
+function createTable(data) {
   if (data.length > 0) {
-    for (let item of data) {
-      let index = result.findIndex(tweet => tweet.id === item.id);
-      if (index === -1) {
-        result.push(item);
-      }
-    }
-  }
-
-  return result;
-}
-
-function createTable(response) {
-  if (response.length > 0) {
     let html = '<table>';
     html += '<tr>';
     html += '<th align="left">ID</th>';
@@ -107,7 +111,7 @@ function createTable(response) {
     html += '<th align="left">Tweet</th>';
     html += '</tr>';
 
-    for (let item of response) {
+    for (let item of data) {
       html += '<tr>';
       html += '<td>' + item.id + '</td>';
       html += '<td>' + item.stamp + '</td>';
