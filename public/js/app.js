@@ -51,31 +51,27 @@ const allTweets = (startDate, endDate, resolve, reject) => {
         }
       })
       .then(response => {
+        counter--;
         if (response.data.length === 100) {
-          counter--;
-          reduceResult(startDate, endDate).then(newDates => {
-            getTweets(startDate, newDates[0], resolve, reject);
-            getTweets(newDates[1], endDate, resolve, reject);
+          reduceResult(startDate, endDate).then(newDate => {
+            getTweets(startDate, newDate, resolve, reject);
+            getTweets(newDate, endDate, resolve, reject);
           });
         } else {
           const data = response.data;
-          counter--;
-
           if (data.length > 0) {
             for (let item of data) {
               let index = result.findIndex(tweet => tweet.id === item.id);
               if (index === -1) {
                 result.push(item);
-              }
+                let html = 'Total tweets: ' + result.length;
+                document.getElementById('tweet-total').innerHTML = html;
+              }           
             }
           }
-
           if (counter === 0) {
             resolve(result);
           }
-
-          let html = 'Total tweets: ' + result.length;
-          document.getElementById('tweet-total').innerHTML = html;
         }
       })
       .catch(error => {
@@ -93,13 +89,10 @@ async function reduceResult(startDate, endDate) {
   const diffDays = parseInt((end - start) / (1000 * 60 * 60 * 24));
   const midpointDays = Math.floor(diffDays / 2);
 
-  // UTC Javascript Date & Time Zone Issues may generate overlap
-  // Duplication accounted for in results validation
-
+  // Adjust - new date
   await start.setUTCDate(start.getUTCDate() + midpointDays);
-  await end.setUTCDate(end.getUTCDate() - midpointDays);
-
-  return [start.toUTCString(), end.toUTCString()];
+  const newDate = start.toUTCString();
+  return [newDate];
 }
 
 function createTable(data) {
