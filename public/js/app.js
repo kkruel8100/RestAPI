@@ -32,17 +32,12 @@ document.querySelector('#search-button').addEventListener('click', e => {
   new Promise((resolve, reject) => {
     allTweets(startDateValue, endDateValue, resolve, reject);
   }).then(response => {
-    createTable(response);
+    createTable(response.data);
   });
 });
 
 // GET Tweet Request
 const allTweets = (startDate, endDate, resolve, reject) => {
-  let counter = 0;
-  let result = [];
-
-  const getTweets = (startDate, endDate, resolve, reject) => {
-    counter++;
     axios
       .get('http://localhost:3000/api/tweets', {
         params: {
@@ -51,51 +46,17 @@ const allTweets = (startDate, endDate, resolve, reject) => {
         }
       })
       .then(response => {
-        counter--;
-        if (response.data.length === 100) {
-          reduceResult(startDate, endDate).then(newDate => {
-            getTweets(startDate, newDate, resolve, reject);
-            getTweets(newDate, endDate, resolve, reject);
-          });
-        } else {
-          const data = response.data;
-          if (data.length > 0) {
-            for (let item of data) {
-              let index = result.findIndex(tweet => tweet.id === item.id);
-              if (index === -1) {
-                result.push(item);
-                let html = 'Total tweets: ' + result.length;
-                document.getElementById('tweet-total').innerHTML = html;
-              }           
-            }
-          }
-          if (counter === 0) {
-            resolve(result);
-          }
-        }
+        resolve(response);
       })
       .catch(error => {
         return 'Something went wrong. Please refresh and try again.';
       });
-  };
-  getTweets(startDate, endDate, resolve, reject);
 };
 
-// Modify API date parameters to reduce data results to less than 100
-async function reduceResult(startDate, endDate) {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  const diffDays = parseInt((end - start) / (1000 * 60 * 60 * 24));
-  const midpointDays = Math.floor(diffDays / 2);
-
-  // Adjust - new date
-  await start.setUTCDate(start.getUTCDate() + midpointDays);
-  const newDate = start.toUTCString();
-  return [newDate];
-}
-
 function createTable(data) {
+  let htmlTotal = 'Total tweets: ' + data.length;
+  document.getElementById('tweet-total').innerHTML = htmlTotal;
+  
   if (data.length > 0) {
     let html = '<table>';
     html += '<tr>';
